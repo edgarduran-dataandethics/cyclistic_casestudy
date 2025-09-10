@@ -1,0 +1,259 @@
+### ASK
+
+```sql
+CREATE OR REPLACE TABLE `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData` AS -- Creating table that combines all of the data sets. I did notice that I misnamed the database at the start, but that’s okay. I was able to work with it despite this at the start.
+SELECT *, '2024-09' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Sept_2024_TripData`
+UNION ALL
+SELECT *, '2024-10' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Oct_2024_TripData`
+UNION ALL
+SELECT *, '2024-11' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Nov_2024_TripData`
+UNION ALL
+SELECT *, '2024-12' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Dec_2024_TripData`
+UNION ALL
+SELECT *, '2025-01' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Jan_2025_TripData`
+UNION ALL
+SELECT *, '2025-02' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Feb_2025_TripData`
+UNION ALL
+SELECT *, '2025-03' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.March_2025_TripData`
+UNION ALL
+SELECT *, '2025-04' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.April_2025_TripData`
+UNION ALL
+SELECT *, '2025-05' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.May_2025_TripData`
+UNION ALL
+SELECT *, '2025-06' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.June_2025_TripData`
+UNION ALL
+SELECT *, '2025-07' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.July_2025_TripData`
+UNION ALL
+SELECT *, '2025-08' AS trip_month FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.August_2025_TripData`;
+**NOTE: The table that was created now has 5,646,038 rows and 14 columns**
+```
+
+### CLEANING
+```sql
+SELECT
+id_characters
+FROM
+(
+  SELECT 
+  LENGTH(ride_id) AS id_characters -- trying to make sure that the ID lengths are correct for all of them
+  FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData` 
+)
+WHERE
+id_characters<16 -- to see if there are any with less than 16 characters
+
+SELECT
+id_characters
+FROM
+(
+  SELECT 
+  LENGTH(ride_id) AS id_characters -- trying to make sure that the ID lengths are correct for all of them
+  FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData` 
+)
+WHERE
+id_characters>16 -- to see if there are any with more than 16 characters
+```
+
+Neither returned any incorrect ids.
+
+**Created a new table so that the aggregated data could remain in its original form while I add new columns and delete unusable columns**
+
+```sql
+CREATE OR REPLACE TABLE `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` AS -- To create a new table that includes additional columns so that the original big table can remain untouched (just in case)
+SELECT
+  *,
+  DATE(started_at) AS s_date,-- So I can see the start date as date rather than a timestamp. Same with below
+  DATE(ended_at) AS e_date,
+  TIME(started_at) AS s_time,
+  TIME(ended_at) AS e_time,
+  FORMAT_DATE('%A', DATE(started_at)) AS day_of_week, -- I wanted to see day of the week to see the most popular days
+  timestamp_diff(ended_at, started_at, minute) AS trip_time -- I used timestamp and minutes to best get a sense of how many minutes passed by on a trip (which helps with determining if someone used it for 24 hours or more)
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData`
+ORDER BY 
+  s_date, e_date -- So that in the event someone used it starting one day and ending another day, they are also grouped in a way that makes sense
+
+--Wanted to see member v casual per month
+SELECT 
+   member_casual,
+   COUNT(ride_id) AS total_rides, trip_month
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY trip_month, member_casual
+ORDER BY trip_month, member_casual;```
+
+Every month, members beat casuals. Casuals and members drop down a lot starting in November, but casuals more so. It picks back up to at least 100,000 in April which suggest that seasons and weather patterns play a bigger role for casuals than for members.
+
+### PROCESS
+
+```sql
+SELECT 
+  COUNT(ride_id) AS total_rides
+FROM
+`cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+```
+This tells me that from September 2024 through August 2025, there were 5,646,038 rides in total.
+```sql
+
+SELECT
+  APPROX_QUANTILES(trip_time, 100)[OFFSET(50)] AS median_trip_duration
+  FROM
+  `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+```
+This told me that the median (for all of the trips regardless of status) was 9 minutes.
+
+```sql
+SELECT 
+  ROUND(AVG(trip_time), 2) AS avg_trip_duration
+FROM
+  `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+```
+This told me that the average for all rides was 15.58 minutes
+
+```sql
+
+SELECT 
+ member_casual,
+ COUNT(ride_id) AS total_rides
+FROM
+  `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY member_casual
+```
+
+This broke down the number of rides by casual and member.
+Member: 3,568,537 rides
+Casual: 2,077,501 rides
+
+Unsurprising, the members rode more. Will need to look at rides by week and month to be certain, but I assume most casuals only ride on weekends and summer while members use it more often (maybe commuting) to get their money’s worth.
+
+```sql
+
+SELECT 
+  member_casual,
+  ROUND(100 * COUNT(ride_id) / SUM(COUNT(ride_id)) OVER(), 2) AS percent_rides
+FROM
+  `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY member_casual
+--Wanting to see a percentage breakdown, I looked into percentages.
+--Members: 63.2%
+--Casuals: 36.8%
+
+--Seeing the percentages really put things into perspective. But I wanted to dive deeper to get a sense of why these numbers were the way they were (and when).
+```
+
+### Analyze
+
+```sql
+
+SELECT 
+   member_casual,
+   COUNT(ride_id) AS total_rides, day_of_week
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY day_of_week, member_casual
+ORDER BY day_of_week, member_casual;
+
+```
+
+As expected, members are active throughout the week, including the weekend, while casuals are mostly “weekend warriors.” This, combined with month, gives the impression that people who travel to Chicago may be using the bikes and/or people who are out of school may also be using the bikes. Suggestion: “Weekend Pass” as an alternative pass option to potentially increase revenue 
+
+```sql
+
+SELECT 
+  start_station_name,
+  member_casual,
+  COUNT(ride_id) AS rides,
+  start_lat, start_lng
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY start_station_name, member_casual, start_lat, start_lng
+ORDER BY rides DESC
+LIMIT 20;
+--I was curious about where people were starting since I was thinking that one strategy could be to partner with local organizations to give employees a pre-tax benefit of a monthly or annual pass (or minor discount). This generated a table with the top 20 starting locations (note, I ended up adding Latitude and Longitude since there were many nulls in station name). Not entirely sure what to do with this yet, but it could prove to be useful.
+
+SELECT 
+  start_station_name,
+  member_casual,
+  COUNT(ride_id) AS rides,
+  start_lat, start_lng
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY start_station_name, member_casual, start_lat, start_lng
+ORDER BY rides DESC
+LIMIT 10; 
+
+```
+
+Started with 20 to get a sense, but upon further reflection (and seeing the data pulled out), 20 seems to be too many. So I brought it down to 10. I kept the nulls because even if the station doesn’t have a name, it’s location is important for making decisions on potential partnerships, understanding habits for where people pick up a bike. I am also focusing on where they start rather than start and end because though travel distance could be beneficial, converting more people from casual to members benefits more from knowing where they are starting.
+
+For the future, trip analysis could be useful to determine if more stations should be added, however the ending location only tells us where they put the bike in the end, not where they went. It could provide some potential information, but it is limited in scope and business application.
+
+```sql
+
+SELECT 
+  member_casual,
+  APPROX_QUANTILES(TIMESTAMP_DIFF(ended_at, started_at, MINUTE), 2)[OFFSET(1)] AS median_ride_minutes,
+  AVG(TIMESTAMP_DIFF(ended_at, started_at, MINUTE)) AS avg_ride_minutes
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final`
+GROUP BY member_casual;
+
+```
+This is telling me the median and average rides. From that people mostly use the bikes for short intervals (to get from one place to another). Without knowing the membership ID, I am unable to see how often members use bikes to get a more appropriate set of information about member bike usage. However it is also telling me that casual bike riders will use the bike for longer than members (both on average and the median), implying that members are willing to use the bike regardless of distance (likely to get the most out of their membership) while casuals use it when the need arises. From a business standpoint, this could be useful for marketing with a slogan along the lines of “Get where you need to go, faster.” This also lends itself to the idea of having more options for membership types (weekly, monthly, weekend, seasonal, six month, etc.). However, this removed outliers that skewed the average time.
+
+* Average for casual was: 22.4 minutes - above the average of 15.68
+* Median for Casual was: 11 minutes - above the median of 9 minutes
+* Average for Member was: 11.62 minutes - below the average of 15.68
+* Median for Member was: 8 minutes - below the median of 9 minutes
+
+```sql
+
+SELECT 
+ rideable_type,
+  member_casual,
+  COUNT(ride_id) AS rides
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY rideable_type, member_casual -- members were higher on both types of bikes, but casuals beat members on electric scooters.
+
+```
+
+Looking at bike types, it becomes clear that both members and casuals preferred electric bikes more than classic bikes. The Scooter information was easier, but it could be representative of the supply of electric bikes and electric scooters. Depending on the price of scooters, it might be worth adding more scooters to increase the casual access to electric items.
+
+```sql
+
+SELECT 
+ member_casual,
+ day_of_week,
+  EXTRACT(HOUR FROM started_at) AS hour_of_day,
+  COUNT(ride_id) AS ride_count
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY member_casual, day_of_week, hour_of_day
+ORDER BY hour_of_day DESC
+```
+
+Generating a table to use for a heat map or something similar, specifically for days of the week to better see how popular days of the week are and the hours in the day. There is something there, but a visualization would be a better way to see it.
+
+``` sql
+
+SELECT 
+  member_casual,
+  FORMAT_DATE('%B', DATE(started_at)) AS month,    
+  day_of_week,
+  COUNT(ride_id) AS ride_count
+FROM `cyclist-471504.Cyclist_Data_Oct2024_Sept2025.Combined_TripData_Final` 
+GROUP BY member_casual, month, day_of_week
+ORDER BY month, day_of_week;
+
+```
+
+Trying to get a good sense of month and day of week to see the seasonal connection. A visual is helpful for this.
+
+
+### Trends
+Casuals seem to be seasonal and weekend based which implies either traveling to Chicago or not seeing a need for an annual pass when alternatives exist for their needs during the week.
+Casuals seem to use the electric scooters more than members which indicates that there either aren’t enough electric bicycles (the most popular option) or a preference for the scooters. An optional survey to people who opt for a day-pass could be useful for determining the reasoning and determining next steps.
+Evenings, in general, seem to be more popular among riders. Typical times, regardless of day, tends to align with rush hour, suggesting that many riders choose to use the service as a means of traveling between locations (either work and home, to a restaurant or bar or second location to meet with friends, or between non-work related locations). With the combination of summer as the most popular season, it could also be in reference to weather patterns. 
+
+### Suggestions
+Corporate Partnerships: High ridership during weekday commute hours for members and drops in usage during colder months indicates that members want to use their memberships when possible. Companies could subsidize memberships like pre-tax transit benefits or as a commuter benefit. The most popular locations for members differs from the most popular places for casuals, so that is something to consider when thinking of converting casuals into members.
+Personalization: Provide riders with app-based “progress dashboards” (like health apps) to somewhat gamify usage, track savings vs. car/ride-hail, and overall generate a sense of community. This could either be exclusive to members, or members could get more personalized information and data for their own analysis. The inclusion could increase interest in casuals turning into members.
+Profitability Beyond Conversion: Instead of focusing only on converting casuals, there may be a benefit to adding alternatives for casuals that still generate more money than the annual (e.g., flexible pass types, tourist promotions, etc.).
+Seasonal & Flexible Passes: Data shows casual riders peak in summer (August showing the highest peak), so it may be worth testing flexible pass types like seasonal or weekend-only passes. Additionally, monthly passes could also provide some additional revenue, especially among college students, as an alternative flexible pass type. These flexible pass types may also encourage other locals to Chicago who use bikes occasionally on the weekend to consider a different pass type based on their needs (monthly when their car breaks down instead of commenting using a rental car, ride-shares, or public transit). All in all, flexible pass types would allow also allow for a better understanding of customer behaviors if alternatives become popular.
+* If alternative pass structures are implemented, a partnership with the Aquarium could be included to expand the overall casual base.
+Equity Angle: Chicago has disparities in transit access, so consider income-based pricing or discounted passes for low-income residents. A livable wage for an adult with 0 children would be $24.88/hour aka 51,750.40/year which is almost $10 more per hour compared to the minimum wage. Additional options for memberships or a sliding scale plan could increase usage as an alternative to the Chicago Transit Authority (CTA) while promoting heart health, combatting stagnant lifestyles, and increasing exercise to improve the overall health of the community. This could build trust with the brand and allow for more people to access the service who otherwise wouldn’t.
+
+
+
