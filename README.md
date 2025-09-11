@@ -16,7 +16,7 @@ Inside you will find me going through these specific steps which were inspired b
 * PREPARE: Where I go through the beginning steps of setting up the SQL queries. Additionally, it is an early high level exploration of the data to determine next steps in the anlysis and limitations.
 * PROCESS: How I set up the data, cleaned it, and transformed it.
 * ANALYZE: The process I used to analyze and my thoughts behind it.
-* RECOMMENDATIONS: Finally, the trends to respond to the specific question I was tasked to answer, along with additional recommendations.
+* RECOMMENDATIONS: Finally, the trends to respond to the specific question I was tasked to answer, along with additional opportunities.
 
 **Key Highlights**
 * Combined and cleaned 5.6M rides (Sept 2024–Aug 2025) into a unified dataset.
@@ -26,7 +26,7 @@ Inside you will find me going through these specific steps which were inspired b
 * Recommended flexible pass types (seasonal, weekend, monthly) and corporate partnerships to increase membership and revenue.
 
 **Notes and Additional Links:**
-* [You can find the interactive Dashboard here](https://public.tableau.com/views/Sept2024_Aug2025_BikeShare/Dashboard2Attempt?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
-* Though the case study only required answering the first question, I extended the analysis to address the others for additional insight
-* This README is written for portfolio reviewers and hiring managers; see the [Executive Summary (PDF)] (link when available) for a stakeholder-facing version.
+* [You can find the interactive Dashboard here](https://public.tableau.com/views/Sept2024_Aug2025_BikeShare/Dashboard2Attempt?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link).
+* Though the case study only required answering the first question, I extended the analysis to address the others for additional insight.
+* This README is written for portfolio reviewers and hiring managers; see the [Executive Summary (PDF)]([link when available](https://github.com/edgarduran-dataandethics/cyclistic_casestudy/blob/main/Cyclistic%20Executive%20Summary.pdf)) for a stakeholder-facing version.
 * I learned SQL and Tableau through my Google Analytics Certificate on Coursera and created this project to deepen my applied skills.
