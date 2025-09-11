@@ -28,5 +28,5 @@ Inside you will find me going through these specific steps which were inspired b
 **Notes and Additional Links:**
 * [You can find the interactive Dashboard here](https://public.tableau.com/views/Sept2024_Aug2025_BikeShare/Dashboard2Attempt?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link).
 * Though the case study only required answering the first question, I extended the analysis to address the others for additional insight.
-* This README is written for portfolio reviewers and hiring managers; see the [Executive Summary (PDF)]([link when available](https://github.com/edgarduran-dataandethics/cyclistic_casestudy/blob/main/Cyclistic%20Executive%20Summary.pdf)) for a stakeholder-facing version.
+* This README is written for portfolio reviewers and hiring managers; see the [Executive Summary (PDF)](https://github.com/edgarduran-dataandethics/cyclistic_casestudy/blob/main/Cyclistic%20Executive%20Summary.pdf)) for a stakeholder-facing version.
 * I learned SQL and Tableau through my Google Analytics Certificate on Coursera and created this project to deepen my applied skills.
